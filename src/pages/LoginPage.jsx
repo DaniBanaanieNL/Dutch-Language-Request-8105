@@ -1,33 +1,42 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import React, {useState} from 'react'
+import {Link, useNavigate} from 'react-router-dom'
+import {motion} from 'framer-motion'
 import SafeIcon from '../common/SafeIcon'
-import { FiMail, FiLock, FiLoader } from 'react-icons/fi'
-import { useAuth } from '../context/AuthContext'
+import {FiMail, FiLock, FiLoader} from 'react-icons/fi'
+import {useAuth} from '../context/AuthContext'
+import { useDevMode } from '../context/DevModeContext'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const {login} = useAuth()
+  const { logError, isDevMode } = useDevMode()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    
+
     try {
       await login(email, password)
       navigate('/dashboard')
     } catch (error) {
       console.error('Login error:', error)
+      
+      if (isDevMode) {
+        logError({
+          ...error,
+          details: { email } // Don't log password
+        })
+      }
+      
       setError(
         error.message === 'Invalid login credentials'
           ? 'Ongeldige inloggegevens. Controleer je e-mail en wachtwoord.'
-          : 'Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.'
+          : `Er is een fout opgetreden bij het inloggen: ${isDevMode ? error.message : 'Probeer het opnieuw.'}`
       )
     } finally {
       setLoading(false)
@@ -37,8 +46,8 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{opacity: 0, y: 20}}
+        animate={{opacity: 1, y: 0}}
         className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg"
       >
         <div>
@@ -46,7 +55,7 @@ function LoginPage() {
             Inloggen
           </h2>
         </div>
-        
+
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700">
             <p>{error}</p>
@@ -73,7 +82,7 @@ function LoginPage() {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="password" className="sr-only">Wachtwoord</label>
               <div className="relative">

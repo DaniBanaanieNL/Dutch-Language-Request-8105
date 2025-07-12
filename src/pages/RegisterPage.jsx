@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import React, {useState} from 'react'
+import {Link, useNavigate} from 'react-router-dom'
+import {motion} from 'framer-motion'
 import SafeIcon from '../common/SafeIcon'
-import { FiMail, FiLock, FiUser, FiLoader } from 'react-icons/fi'
-import { useAuth } from '../context/AuthContext'
-import { validatePasswordStrength } from '../utils/passwordUtils'
+import {FiMail, FiLock, FiUser, FiLoader} from 'react-icons/fi'
+import {useAuth} from '../context/AuthContext'
+import {validatePasswordStrength} from '../utils/passwordUtils'
 import PasswordStrengthIndicator from '../components/auth/PasswordStrengthIndicator'
+import { useDevMode } from '../context/DevModeContext'
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -16,12 +17,12 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPasswordStrength, setShowPasswordStrength] = useState(false)
-  
   const navigate = useNavigate()
-  const { register } = useAuth()
+  const {register} = useAuth()
+  const { logError, isDevMode } = useDevMode()
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    setFormData({...formData, [e.target.name]: e.target.value})
   }
 
   const handleSubmit = async (e) => {
@@ -38,17 +39,33 @@ function RegisterPage() {
     }
 
     try {
-      await register(formData.email, formData.password)
-      // Na registratie wordt een bevestigingsmail verstuurd
+      const result = await register(formData.email, formData.password, {
+        user_type: formData.userType
+      })
+      
+      if (isDevMode) {
+        console.log('Registration result:', result);
+      }
+
       setError('')
-      alert('Controleer je e-mail voor de bevestigingslink om je account te activeren.')
+      alert('Je account is aangemaakt! Je kunt nu inloggen.')
       navigate('/login')
     } catch (error) {
       console.error('Registratie error:', error)
+      
+      if (isDevMode) {
+        logError({
+          ...error,
+          details: {
+            formData: { ...formData, password: '********' } // Mask password for security
+          }
+        })
+      }
+      
       setError(
         error.message === 'User already registered'
           ? 'Dit e-mailadres is al geregistreerd.'
-          : 'Er is een fout opgetreden bij het registreren. Probeer het opnieuw.'
+          : `Er is een fout opgetreden bij het registreren: ${isDevMode ? error.message : 'Probeer het opnieuw.'}`
       )
     } finally {
       setLoading(false)
@@ -58,8 +75,8 @@ function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{opacity: 0, y: 20}}
+        animate={{opacity: 1, y: 0}}
         className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg"
       >
         <div>
@@ -70,7 +87,7 @@ function RegisterPage() {
             Maak een nieuw account aan
           </p>
         </div>
-        
+
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700">
             <p>{error}</p>

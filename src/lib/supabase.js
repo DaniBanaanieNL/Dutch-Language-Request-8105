@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://vxmhzhinqkiyxrfzffew.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4bWh6aGlucWtpeXhyZnpmZmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDEyOTMsImV4cCI6MjA2NzkxNzI5M30.zy0B_32HWKczsdTpiWY3gzTO7NWrVs2Sp-j7lzXnxuU'
+// Gebruik environment variabelen of veilige configuratie
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://vxmhzhinqkiyxrfzffew.supabase.co'
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '' // Laat leeg in productie voor veiligheid
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Missing Supabase environment variables')
+  console.warn('Supabase credentials zijn niet volledig geconfigureerd')
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -19,17 +20,17 @@ export const messageService = {
   // Haal berichten op voor een specifieke map
   async getMessages(folder = 'inbox') {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {data: {user}} = await supabase.auth.getUser()
       if (!user) throw new Error('Niet ingelogd')
 
       let query = supabase
         .from('messages_x7k9y2m4n8')
         .select(`
           *,
-          sender:sender_id(id, email, full_name),
-          recipient:recipient_id(id, email, full_name)
+          sender:sender_id(id,email,full_name),
+          recipient:recipient_id(id,email,full_name)
         `)
-        .order('created_at', { ascending: false })
+        .order('created_at', {ascending: false})
 
       if (folder === 'sent') {
         query = query.eq('sender_id', user.id)
@@ -39,8 +40,7 @@ export const messageService = {
         query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`).eq('folder', 'trash')
       }
 
-      const { data, error } = await query
-
+      const {data, error} = await query
       if (error) throw error
 
       // Transform data voor frontend gebruik
@@ -63,13 +63,13 @@ export const messageService = {
   },
 
   // Verstuur een nieuw bericht
-  async sendMessage({ recipientEmail, subject, content }) {
+  async sendMessage({recipientEmail, subject, content}) {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {data: {user}} = await supabase.auth.getUser()
       if (!user) throw new Error('Niet ingelogd')
 
       // Zoek ontvanger op basis van email
-      const { data: recipientData, error: recipientError } = await supabase
+      const {data: recipientData, error: recipientError} = await supabase
         .from('profiles_x7k9y2m4n8')
         .select('id')
         .eq('email', recipientEmail)
@@ -80,7 +80,7 @@ export const messageService = {
       }
 
       // Verstuur bericht naar ontvanger (inbox)
-      const { data: inboxMessage, error: inboxError } = await supabase
+      const {data: inboxMessage, error: inboxError} = await supabase
         .from('messages_x7k9y2m4n8')
         .insert({
           sender_id: user.id,
@@ -95,7 +95,7 @@ export const messageService = {
       if (inboxError) throw inboxError
 
       // Maak kopie voor verzender (sent)
-      const { data: sentMessage, error: sentError } = await supabase
+      const {data: sentMessage, error: sentError} = await supabase
         .from('messages_x7k9y2m4n8')
         .insert({
           sender_id: user.id,
@@ -110,7 +110,7 @@ export const messageService = {
 
       if (sentError) throw sentError
 
-      return { inboxMessage, sentMessage }
+      return {inboxMessage, sentMessage}
     } catch (error) {
       console.error('Fout bij versturen bericht:', error)
       throw error
@@ -120,12 +120,12 @@ export const messageService = {
   // Markeer bericht als gelezen
   async markAsRead(messageId) {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {data: {user}} = await supabase.auth.getUser()
       if (!user) throw new Error('Niet ingelogd')
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('messages_x7k9y2m4n8')
-        .update({ read: true })
+        .update({read: true})
         .eq('id', messageId)
         .eq('recipient_id', user.id)
         .select()
@@ -141,12 +141,12 @@ export const messageService = {
   // Verplaats bericht naar prullenbak
   async moveToTrash(messageId) {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {data: {user}} = await supabase.auth.getUser()
       if (!user) throw new Error('Niet ingelogd')
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('messages_x7k9y2m4n8')
-        .update({ folder: 'trash' })
+        .update({folder: 'trash'})
         .eq('id', messageId)
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .select()
@@ -162,9 +162,9 @@ export const messageService = {
   // Haal alle gebruikers op (voor autocomplete)
   async getUsers() {
     try {
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('profiles_x7k9y2m4n8')
-        .select('id, email, full_name, user_type')
+        .select('id,email,full_name,user_type')
         .order('full_name')
 
       if (error) throw error
@@ -178,12 +178,12 @@ export const messageService = {
   // Haal aantal ongelezen berichten op
   async getUnreadCount() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {data: {user}} = await supabase.auth.getUser()
       if (!user) return 0
 
-      const { count, error } = await supabase
+      const {count, error} = await supabase
         .from('messages_x7k9y2m4n8')
-        .select('*', { count: 'exact', head: true })
+        .select('*', {count: 'exact', head: true})
         .eq('recipient_id', user.id)
         .eq('read', false)
         .neq('folder', 'trash')
@@ -202,10 +202,10 @@ export const profileService = {
   // Maak of update gebruikersprofiel
   async upsertProfile(profileData) {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {data: {user}} = await supabase.auth.getUser()
       if (!user) throw new Error('Niet ingelogd')
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('profiles_x7k9y2m4n8')
         .upsert({
           id: user.id,
@@ -226,10 +226,10 @@ export const profileService = {
   // Haal gebruikersprofiel op
   async getProfile() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {data: {user}} = await supabase.auth.getUser()
       if (!user) throw new Error('Niet ingelogd')
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('profiles_x7k9y2m4n8')
         .select('*')
         .eq('id', user.id)
