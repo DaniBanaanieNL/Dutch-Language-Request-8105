@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.app {
+  @apply min-h-screen bg-gray-50;
+}
+
+.hero-section {
+  @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white;
+}
+
+.nav-link {
+  @apply flex items-center px-4 py-2 text-gray-700 hover:text-blue-600 transition-colors;
+}
+
+.btn-primary {
+  @apply flex items-center px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors;
+}
+
+.btn-secondary {
+  @apply flex items-center px-6 py-2 border-2 border-blue-600 text-blue-600 rounded-full hover:bg-blue-50 transition-colors;
+}
+
+.feature-card {
+  @apply bg-white p-6 rounded-xl shadow-lg text-center;
+}
+
+.shadow-top {
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .text-4xl {
+    @apply text-3xl;
+  }
+  
+  .text-6xl {
+    @apply text-4xl;
+  }
+}
+
+/* Add space for mobile navigation */
+@media (max-width: 768px) {
+  .app {
+    padding-bottom: 4rem;
+  }
+}
